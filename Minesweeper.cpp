@@ -11,21 +11,25 @@ class CampoMinado
         bool TemBombaPerto(int linha,int coluna);
         int  ContaBomba(int linha, int coluna);
         void MostrarTabuleiro();
+        void MostrarTabuleiroBomba();
         void Inicializar();
         void AtualizarTabuleiro(int linha, int coluna);
+        void Marcar(int linha, int coluna);
+        int marcado[9][9];
     private:
         char tabuleiro[9][9];
         int bomba[8][2];
 };
 void CampoMinado::Inicializar()
 {
-    //inicializa o tabuleiro
+    // inicializa o tabuleiro e a matriz de marcações
     for(int i = 0; i < 9; i++){
         for(int j = 0; j < 9; j++){
             tabuleiro[i][j] = '-';
+            marcado[i][j] = 0;
         }
     }
-    //inicializa as bombas em posicoes aleatorias
+    // inicializa as bombas em posicoes aleatorias
     srand(time(NULL));
     int count = 0;
     while (count < 8){
@@ -44,10 +48,12 @@ void CampoMinado::MostrarTabuleiro()
     for(int i = 0; i < 9; i++){
         cout << i + 1 << " ";
         for(int j = 0; j < 9; j++){
-            if(tabuleiro[i][j] == 'B'){
+            if(marcado[i][j]){
+                cout << "[F] ";
+            } else if(tabuleiro[i][j] == 'B'){
                 cout << "[-] ";
-            }else{
-            cout << "[" << tabuleiro[i][j] << "] ";
+            } else {
+                cout << "[" << tabuleiro[i][j] << "] ";
             }
         }
         cout << endl;
@@ -56,7 +62,26 @@ void CampoMinado::MostrarTabuleiro()
         cout << "   " << i + 1;
     }
     cout << endl;
-} 
+}
+void CampoMinado::MostrarTabuleiroBomba(){
+    for(int i = 0; i < 9; i++){
+        cout << i + 1 << " ";
+        for(int j = 0; j < 9; j++){
+            if (tabuleiro[i][j] == 'B') {
+                cout << "[-] ";
+            } else if (marcado[i][j]) {
+                cout << "[F] ";
+            } else {
+                cout << "[" << tabuleiro[i][j] << "] ";
+            }
+        }
+        cout << endl;
+    }
+    for(int i = 0; i < 9; i++){
+        cout << "   " << i + 1;
+    }
+    cout << endl;
+}
 bool CampoMinado::TemBomba(int linha,int coluna)
 {
     if(tabuleiro[linha][coluna] == 'B'){
@@ -91,7 +116,7 @@ int CampoMinado::ContaBomba(int linha,int coluna)
 void CampoMinado::AtualizarTabuleiro(int linha, int coluna)
 {
     // Se a posição selecionada tiver bomba, colocá-la no tabuleiro e sair
-    if(TemBomba(linha,coluna)){                                            
+    if(TemBomba(linha,coluna)){
         tabuleiro[linha][coluna] = 'B';
         return;
     }
@@ -109,12 +134,17 @@ void CampoMinado::AtualizarTabuleiro(int linha, int coluna)
     tabuleiro[linha][coluna] = ' ';
     for (int i = linha - 1; i <= linha + 1; i++) {
         for (int j = coluna - 1; j <= coluna + 1; j++) {
-            if (i >= 0 && i < 9 && j >= 0 && j < 9 && tabuleiro[i][j] == '-') {
+            if (i >= 0 && i < 9 && j >= 0 && j < 9 && tabuleiro[i][j] == '-' && !marcado[i][j]) {
                 AtualizarTabuleiro(i, j);
             }
         }
     }
 }
+void CampoMinado::Marcar(int linha, int coluna)
+{
+    marcado[linha][coluna] = !marcado[linha][coluna];
+}
+
 int main()
 {
     CampoMinado m;
@@ -122,35 +152,39 @@ int main()
     m.Inicializar();
     string resposta;
     bool jogando = true;
-    while(jogando){
+    do{
         m.MostrarTabuleiro();
         cout << endl;
-        do{
-            cout << "Linha: ";
-            cin >> row;
-            row -= 1; 
-            cout << endl;
-        }while(row<0 || row>9 );
-        do{
-            cout << "Coluna: ";
-            cin >> column;
-            column -= 1;
-            cout << endl;
-        }while(column<0 || column>9 );
+        cout << "Linha: ";
+        cin >> row;
+        row -= 1; 
+        cout << endl;
+        cout << "Coluna: ";
+        cin >> column;
+        column -= 1;
+        cout << endl;
         if(m.TemBomba(row,column)){
+            m.MostrarTabuleiroBomba();
             cout << "Voce perdeu!" << endl;
-            cout << "Deseja reiniciar?(sim/nao)";
+            cout << "Deseja jogar novamente?(sim/nao): ";
             cin >> resposta;
             if(resposta == "sim"){
-                cout << endl;
+                m.TemBomba(row,column) == false;
                 m.Inicializar();
-            }else{
-                jogando = false;
+                cout << endl;
             }
-        }else{
-            m.AtualizarTabuleiro(row,column);
+        } else if (m.marcado[row][column]) {
+            cout << "A célula " << row + 1 << "," << column + 1 << " está marcada com uma bandeira." << endl;
+        } else {
+            m.AtualizarTabuleiro(row, column);
+            cout << "Deseja marcar/desmarcar a célula com uma bandeira? (sim/nao):";
+            cin >> resposta;
+            if(resposta == "sim") {
+                m.Marcar(row, column);
+            }
+            cout << endl;
         }
-    }
+    } while(!m.TemBomba(row,column));
     
     return 0;
 }
